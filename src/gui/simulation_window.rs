@@ -1,6 +1,7 @@
 use gtk4::prelude::*;
 use gtk4::{ApplicationWindow, DrawingArea};
 use glib::ControlFlow;
+use glib::timeout_add;
 use crate::plants::tropisms::Plant;
 use std::sync::{Arc, Mutex};
 
@@ -47,7 +48,7 @@ pub fn build_simulation_window(
         }
     });
 
-    gtk4::timeout_add(16, move || {
+    timeout_add(16, move || {
         drawing_area.queue_draw();
         ControlFlow::Continue
     });

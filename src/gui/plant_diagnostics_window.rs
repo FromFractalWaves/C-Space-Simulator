@@ -40,7 +40,10 @@ pub fn build_plant_diagnostics_window(
     combo.connect_changed(move |combo| {
         let idx = combo.active().unwrap_or(0) as usize;
         let plants = plants_clone.lock().unwrap();
-        details.foreach(|child| details.remove(child));
+
+        while let Some(child) = details.first_child() {
+            details.remove(&child);
+        }
 
         if idx > 0 && idx - 1 < plants.len() {
             if let Some(plant) = plants.get(idx - 1) {
