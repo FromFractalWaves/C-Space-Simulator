@@ -1,3 +1,4 @@
+// src/gui/startup_window.rs
 use gtk4::prelude::*;
 use gtk4::Application;
 use gtk4::{ApplicationWindow, Button, Box as GtkBox, Orientation};
@@ -5,15 +6,16 @@ use crate::control::SimulationControl;
 use crate::gui::{
     control_window, dev_window, environment_window, plant_diagnostics_window, simulation_window,
 };
-use crate::simulation::simulation_env::SimulationEnv;
 use std::sync::Arc;
+use std::sync::mpsc::{Sender, Receiver};
+use crate::plants::tropisms::TropismResult;
+use crate::simulation::simulation_runner::ControlCommand;
 
-pub fn launch() {
+pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: Receiver<Vec<TropismResult>>) {
     let app = Application::new(Some("com.example.simulator"), Default::default());
 
     app.connect_activate(move |app| {
-        let env = SimulationEnv::new();
-        let control = Arc::new(SimulationControl::new(env));
+        let control = Arc::new(SimulationControl::new(crate::simulation::simulation_env::SimulationEnv::new()));
         let app_clone = app.clone();
 
         let window = ApplicationWindow::builder()
@@ -48,6 +50,8 @@ pub fn launch() {
         let app_clone_env = app_clone.clone();
         let app_clone_diag = app_clone.clone();
         let app_clone_sim = app_clone.clone();
+        let command_sender_control = command_sender.clone();
+        let command_sender_dev = command_sender.clone();
 
         control_btn.connect_clicked(move |_| {
             let control_win = control_window::build_control_window(
@@ -56,10 +60,16 @@ pub fn launch() {
                 control_control.clone(),
             );
             control_win.present();
+            command_sender_control.send(ControlCommand::Start).unwrap(); // Start on control window open
         });
 
         dev_btn.connect_clicked(move |_| {
-            let dev_win = dev_window::build_dev_window(app_clone_dev.clone(), control_dev.logs());
+            let dev_win = dev_window::build_dev_window(
+                app_clone_dev.clone(),
+                control_dev.logs(),
+                log_receiver.clone(), // Pass the log receiver
+                command_sender_dev.clone(), // Pass the command sender
+            );
             dev_win.present();
         });
 
@@ -80,8 +90,8 @@ pub fn launch() {
         });
 
         sim_btn.connect_clicked(move |_| {
-            let engine_lock = control_sim.engine(); // Store the Arc
-            let mut engine = engine_lock.lock().unwrap(); // Lock it and keep the guard alive
+            let engine_lock = control_sim.engine();
+            let mut engine = engine_lock.lock().unwrap();
             let sim_win = simulation_window::build_simulation_window(
                 app_clone_sim.clone(),
                 control_sim.plants(),

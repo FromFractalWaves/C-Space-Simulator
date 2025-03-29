@@ -37,6 +37,7 @@ pub struct TropismResult {
     pub log: String,                // Description for dev_window
 }
 
+#[derive(Debug, Clone)]
 pub struct Tropisms;
 
 impl Tropisms {
