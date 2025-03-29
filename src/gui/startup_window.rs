@@ -1,19 +1,14 @@
-// src/startup_window.rs
-use eframe::egui; // Import egui from eframe
+// src/gui/startup_window.rs
+use eframe::egui;
 
-// Define the SimulatorLauncher struct (implements eframe::App)
-pub struct SimulatorLauncher {
-    // Add fields here if needed later (e.g., state for your simulator)
-}
+pub struct SimulatorLauncher {}
 
 impl SimulatorLauncher {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // Initialize your app here if needed
         Self {}
     }
 }
 
-// Implement the eframe::App trait for SimulatorLauncher
 impl eframe::App for SimulatorLauncher {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -27,7 +22,6 @@ impl eframe::App for SimulatorLauncher {
     }
 }
 
-// Public launch function to start the GUI
 pub fn launch() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
