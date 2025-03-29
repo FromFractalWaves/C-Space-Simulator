@@ -4,7 +4,7 @@ use rand::Rng; // For variability in environmental responses
 
 
 /// Represents a plant as a computational entity in the C-Space manifold
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Plant {
     pub pos: Vector3<f32>,      // Position in 3D space (mapped to manifold coordinates)
     pub stem_dir: Vector3<f32>, // Stem direction (coherence projection)
@@ -17,7 +17,7 @@ pub struct Plant {
 }
 
 /// Represents the environment as a computational manifold
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Environment {
     pub light_pos: Vector3<f32>,  // Light source position
     pub water_pos: Vector3<f32>,  // Water source position
