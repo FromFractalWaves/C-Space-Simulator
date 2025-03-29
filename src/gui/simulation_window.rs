@@ -1,23 +1,22 @@
-// src/gui/simulation_window.rs
 use eframe::egui;
-use nalgebra::Vector3;
 use crate::plants::tropisms::Plant;
+use std::sync::{Arc, Mutex};
 
 pub struct SimulationWindow {
-    plants: Vec<Plant>,
+    plants: Arc<Mutex<Vec<Plant>>>, // Shared reference to the plants
 }
 
 impl SimulationWindow {
-    pub fn new(plants: Vec<Plant>) -> Self {
+    pub fn new(plants: Arc<Mutex<Vec<Plant>>>) -> Self {
         Self { plants }
     }
+}
 
-    pub fn update_plants(&mut self, plants: Vec<Plant>) {
-        self.plants = plants;
-    }
-
-    pub fn show(&self, ctx: &egui::Context) {
+impl eframe::App for SimulationWindow {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let plants = self.plants.lock().unwrap();
         egui::Window::new("Simulation View")
+            .id(egui::Id::new("simulation_view"))
             .default_pos([300.0, 0.0])
             .default_size([400.0, 400.0])
             .show(ctx, |ui| {
@@ -25,19 +24,15 @@ impl SimulationWindow {
 
                 let painter = ui.painter();
                 let rect = ui.available_rect_before_wrap();
-
-                // Scale factor to map plant positions to window size
                 let scale = 20.0;
                 let center = rect.center();
 
-                // Draw each plant
-                for plant in &self.plants {
+                for plant in plants.iter() {
                     let pos = center + egui::Vec2::new(
                         plant.pos.x * scale,
-                        -plant.pos.y * scale, // Flip Y for screen coords
+                        -plant.pos.y * scale,
                     );
 
-                    // Stem (green line upward)
                     let stem_end = pos + egui::Vec2::new(
                         plant.stem_dir.x * scale,
                         -plant.stem_dir.y * scale,
@@ -47,7 +42,6 @@ impl SimulationWindow {
                         egui::Stroke::new(2.0, egui::Color32::GREEN),
                     );
 
-                    // Root (brown line downward)
                     let root_end = pos + egui::Vec2::new(
                         plant.root_dir.x * scale,
                         -plant.root_dir.y * scale,
@@ -57,9 +51,10 @@ impl SimulationWindow {
                         egui::Stroke::new(2.0, egui::Color32::BROWN),
                     );
 
-                    // Plant base (small circle)
                     painter.circle_filled(pos.into(), 3.0, egui::Color32::RED);
                 }
             });
+
+        ctx.request_repaint();
     }
 }
