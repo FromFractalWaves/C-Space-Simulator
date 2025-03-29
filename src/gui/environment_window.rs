@@ -9,7 +9,7 @@ pub fn build_environment_window(
     environment: Arc<Mutex<Environment>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
-    window.set_title("Environment Overview");
+    window.set_title(Some("Environment Overview"));
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);

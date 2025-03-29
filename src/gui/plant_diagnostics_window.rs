@@ -8,7 +8,7 @@ pub fn build_plant_diagnostics_window(
     plants: Arc<Mutex<Vec<Plant>>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
-    window.set_title("Plant Diagnostics");
+    window.set_title(Some("Plant Diagnostics"));
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);

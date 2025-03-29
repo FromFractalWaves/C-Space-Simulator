@@ -9,7 +9,7 @@ pub fn build_control_window(
     environment: Arc<Mutex<Environment>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
-    window.set_title("Control Panel");
+    window.set_title(Some("Control Panel"));
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);

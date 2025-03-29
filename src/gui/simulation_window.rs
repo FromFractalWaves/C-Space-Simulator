@@ -9,7 +9,7 @@ pub fn build_simulation_window(
     plants: Arc<Mutex<Vec<Plant>>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
-    window.set_title("Simulation View");
+    window.set_title(Some("Simulation View"));
     window.set_default_size(400, 400);
 
     let drawing_area = DrawingArea::new();
