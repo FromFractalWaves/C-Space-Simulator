@@ -283,7 +283,7 @@ impl eframe::App for PlantCreatorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             // In standalone mode, quitting is the only "back" option
             let mut on_back = || {
-                frame.close = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
             };
             
             // In standalone mode, we can't actually start the simulation,
