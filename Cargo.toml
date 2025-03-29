@@ -9,6 +9,6 @@ edition = "2021"
 [dependencies]
 vte4 = "0.8"
 gtk4 = "0.9"
-glib = "0.19"
+glib = "0.20"
 nalgebra = "0.32"
 rand = "0.8"
