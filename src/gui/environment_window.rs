@@ -8,7 +8,7 @@ pub fn build_environment_window(
     app: gtk4::Application,
     environment: Arc<Mutex<Environment>>,
 ) -> ApplicationWindow {
-    let window = ApplicationWindow::new(app);
+    let window = ApplicationWindow::new(&app);
     window.set_title("Environment Overview");
     window.set_default_size(300, 400);
 

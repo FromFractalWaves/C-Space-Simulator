@@ -4,7 +4,7 @@ use glib::ControlFlow;
 use std::sync::{Arc, Mutex};
 
 pub fn build_dev_window(app: gtk4::Application, logs: Arc<Mutex<Vec<String>>>) -> ApplicationWindow {
-    let window = ApplicationWindow::new(app);
+    let window = ApplicationWindow::new(&app);
     window.set_title("Development Logs");
     window.set_default_size(300, 400);
 

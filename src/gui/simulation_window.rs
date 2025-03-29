@@ -8,7 +8,7 @@ pub fn build_simulation_window(
     app: gtk4::Application,
     plants: Arc<Mutex<Vec<Plant>>>,
 ) -> ApplicationWindow {
-    let window = ApplicationWindow::new(app);
+    let window = ApplicationWindow::new(&app);
     window.set_title("Simulation View");
     window.set_default_size(400, 400);
 
