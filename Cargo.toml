@@ -7,7 +7,8 @@ edition = "2021"
 
 
 [dependencies]
-gtk4 = "0.7"
-glib = "0.18"
+vte4 = "0.8"
+gtk4 = "0.9"
+glib = "0.19"
 nalgebra = "0.32"
 rand = "0.8"

@@ -1,6 +1,10 @@
 use gtk4::prelude::*;
-use gtk4::{ApplicationWindow, Box as GtkBox, Label, ScrolledWindow, TextView, Orientation, Align};
-use glib::source::idle_add;
+use gtk4::{ApplicationWindow, Box as GtkBox, Label, Orientation, Align};
+use vte4::Terminal as VteTerminal;
+use vte4::TerminalExt; // Import for `feed`
+use vte4::TerminalExtManual; // Import for `spawn_async`
+use vte4::PtyFlags;
+use gtk4::gio;
 use std::sync::{Arc, Mutex};
 
 pub fn build_dev_window(
@@ -21,21 +25,33 @@ pub fn build_dev_window(
     header.set_halign(Align::Start);
     container.append(&header);
 
-    let text_view = TextView::new();
-    let scroll = ScrolledWindow::new();
-    scroll.set_child(Some(&text_view));
-    scroll.set_vexpand(true);
-    container.append(&scroll);
+    let terminal = VteTerminal::new();
+    terminal.set_vexpand(true);
+    container.append(&terminal);
 
-    // Use glib::clone! to safely capture a weak reference to text_view
-    let text_view_weak = text_view.downgrade(); // Create a weak reference to avoid ownership issues
-    glib::source::timeout_add_local(std::time::Duration::from_millis(100),move || {
-        // Upgrade the weak reference to a strong one, if the widget still exists
-        if let Some(text_view) = text_view_weak.upgrade() {
-            let logs = logs.lock().unwrap();
-            let text = logs.join("\n");
-            text_view.buffer().set_text(&text);
-        }
+    // Spawn a process to stream logs into the terminal
+    let logs_clone = logs.clone();
+    terminal.spawn_async(
+        PtyFlags::DEFAULT,
+        None, // Working directory
+        &["/bin/sh", "-c", "while true; do echo 'Log update'; sleep 1; done"], // Example command
+        &[], // Environment variables
+        glib::SpawnFlags::DEFAULT,
+        || {},
+        -1, // Timeout
+        None::<&gio::Cancellable>, // Use gio::Cancellable
+        move |result| {
+            if let Ok(_pid) = result {
+                // Optionally handle the process ID
+            }
+        },
+    );
+
+    // Feed logs into the terminal
+    glib::source::timeout_add_local(std::time::Duration::from_millis(100), move || {
+        let logs = logs_clone.lock().unwrap();
+        let text = logs.join("\n");
+        terminal.feed(text.as_bytes(), text.len() as isize); // Now works with TerminalExt in scope
         glib::ControlFlow::Continue
     });
 
