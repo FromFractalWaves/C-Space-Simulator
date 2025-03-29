@@ -1,9 +1,8 @@
 use eframe::egui;
-use egui::{Color32, RichText, Stroke, Vec2};
-use std::collections::HashMap;
+use egui::{Color32, Pos2, RichText, Stroke, Vec2};
 
 mod engine;
-use engine::{CSpaceEngine, EngineParams, PlantNode, ResourcePoint, Vector2D};
+use engine::{CSpaceEngine, EngineParams, Vector2D};
 
 // Application states for navigation
 enum AppState {
@@ -315,9 +314,9 @@ impl CSpaceApp {
                     
                     // Draw light sources
                     for pos in &self.light_positions {
-                        let screen_pos = rect.min + Vec2::new(
-                            pos.x / 2.0,
-                            pos.y / 2.0
+                        let screen_pos = Pos2::new(
+                            rect.min.x + pos.x / 2.0,
+                            rect.min.y + pos.y / 2.0
                         );
                         
                         // Draw glow
@@ -336,9 +335,9 @@ impl CSpaceApp {
                     }
                     
                     // Draw plant seed position
-                    let seed_pos = rect.min + Vec2::new(
-                        self.plant_position.x / 2.0,
-                        self.plant_position.y / 2.0
+                    let seed_pos = Pos2::new(
+                        rect.min.x + self.plant_position.x / 2.0,
+                        rect.min.y + self.plant_position.y / 2.0
                     );
                     
                     painter.circle_filled(
@@ -413,7 +412,7 @@ impl CSpaceApp {
             ui.label("Epsilon:");
             ui.add(egui::DragValue::new(&mut self.params.epsilon)
                 .speed(0.000000001)
-                .min(1e-15)
+                .clamp_range(1e-15..=1e-3)
                 .prefix("1e-")
                 .custom_formatter(|n, _| format!("{:e}", n))
             );
@@ -547,7 +546,7 @@ impl CSpaceApp {
         ui.label(RichText::new("These parameters define the simulation environment.").italics());
     }
     
-    fn render_simulation(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    fn render_simulation(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui) {
         if let Some(engine) = &mut self.engine {
             // Update simulation if running
             if self.simulation_running {
@@ -620,8 +619,8 @@ impl CSpaceApp {
                 let offset_y = (rect.height() - self.params.height * scale) / 2.0 + rect.min.y;
                 
                 // Helper function to convert simulation coords to screen coords
-                let to_screen = |pos: Vector2D| -> Vec2 {
-                    Vec2::new(
+                let to_screen = |pos: Vector2D| -> Pos2 {
+                    Pos2::new(
                         pos.x * scale + offset_x,
                         pos.y * scale + offset_y
                     )
@@ -704,8 +703,11 @@ impl eframe::App for CSpaceApp {
         // Set app-wide visuals
         let mut style = (*ctx.style()).clone();
         style.visuals.window_rounding = 6.0.into();
-        style.visuals.button_rounding = 2.0.into();
-        style.visuals.window_shadow.extrusion = 8.0;
+        style.visuals.widgets.noninteractive.rounding = 2.0.into(); // Updated for newer egui
+        style.visuals.widgets.inactive.rounding = 2.0.into();
+        style.visuals.widgets.active.rounding = 2.0.into();
+        style.visuals.widgets.hovered.rounding = 2.0.into();
+        style.visuals.window_shadow.offset = Vec2::new(2.0, 8.0); // Use offset instead of extrusion
         ctx.set_style(style);
         
         // Define the UI layout based on current state

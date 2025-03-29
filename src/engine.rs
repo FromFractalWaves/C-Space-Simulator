@@ -200,8 +200,15 @@ impl CSpaceEngine {
         }
         let total_weight: f32 = attentions.iter().map(|(w, _)| *w).sum();
         let total_weight = total_weight.max(self.params.epsilon);
+        
         attentions.iter().fold(Vector2D::new(0.0, 0.0), |acc, (w, d)| {
-            acc + (*w / total_weight * *d)
+            // Scale the direction vector by the normalized weight
+            let scaled_direction = Vector2D::new(
+                d.x * (*w / total_weight),
+                d.y * (*w / total_weight)
+            );
+            // Add to accumulated vector
+            acc + scaled_direction
         })
     }
 
