@@ -1,18 +1,18 @@
-use gtk::prelude::*;
-use gtk::{ApplicationWindow, Box as GtkBox, Label};
+use gtk4::prelude::*;
+use gtk4::{ApplicationWindow, Box as GtkBox, Label, Orientation};
 use nalgebra::Matrix3;
 use crate::plants::tropisms::Environment;
 use std::sync::{Arc, Mutex};
 
 pub fn build_environment_window(
-    app: gtk::Application,  // Fixed: Correct type and added comma
+    app: gtk4::Application,
     environment: Arc<Mutex<Environment>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(app);
-    window.set_title(Some("Environment Overview"));
+    window.set_title("Environment Overview");
     window.set_default_size(300, 400);
 
-    let container = GtkBox::new(gtk::Orientation::Vertical, 10);
+    let container = GtkBox::new(Orientation::Vertical, 10);
     container.set_margin_all(10);
 
     let env = environment.lock().unwrap();

@@ -1,17 +1,17 @@
-use gtk::prelude::*;
-use gtk::{ApplicationWindow, Box as GtkBox, ComboBoxText, DrawingArea, Label};
+use gtk4::prelude::*;
+use gtk4::{ApplicationWindow, Box as GtkBox, ComboBoxText, DrawingArea, Label, Orientation};
 use crate::plants::tropisms::Plant;
 use std::sync::{Arc, Mutex};
 
 pub fn build_plant_diagnostics_window(
-    app: &gtk::Application,
+    app: gtk4::Application,
     plants: Arc<Mutex<Vec<Plant>>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(app);
-    window.set_title(Some("Plant Diagnostics"));
+    window.set_title("Plant Diagnostics");
     window.set_default_size(300, 400);
 
-    let container = GtkBox::new(gtk::Orientation::Vertical, 10);
+    let container = GtkBox::new(Orientation::Vertical, 10);
     container.set_margin_all(10);
 
     let combo = ComboBoxText::new();
@@ -26,7 +26,7 @@ pub fn build_plant_diagnostics_window(
     container.append(&Label::new(Some("Select Plant:")));
     container.append(&combo);
 
-    let details = GtkBox::new(gtk::Orientation::Vertical, 5);
+    let details = GtkBox::new(Orientation::Vertical, 5);
     let drawing_area = DrawingArea::new();
     drawing_area.set_size_request(200, 200);
 
@@ -80,17 +80,17 @@ pub fn build_plant_diagnostics_window(
                 let root_x = pos_x + plant.root_dir.x as f64 * scale;
                 let root_y = pos_y - plant.root_dir.y as f64 * scale;
 
-                cr.set_source_rgb(0.0, 1.0, 0.0); // Green for stem
+                cr.set_source_rgb(0.0, 1.0, 0.0);
                 cr.move_to(pos_x, pos_y);
                 cr.line_to(stem_x, stem_y);
                 cr.stroke().unwrap();
 
-                cr.set_source_rgb(0.65, 0.16, 0.16); // Brown for root
+                cr.set_source_rgb(0.65, 0.16, 0.16);
                 cr.move_to(pos_x, pos_y);
                 cr.line_to(root_x, root_y);
                 cr.stroke().unwrap();
 
-                cr.set_source_rgb(1.0, 0.0, 0.0); // Red for position
+                cr.set_source_rgb(1.0, 0.0, 0.0);
                 cr.arc(pos_x, pos_y, 3.0, 0.0, 2.0 * std::f64::consts::PI);
                 cr.fill().unwrap();
             }
