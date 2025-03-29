@@ -1,10 +1,11 @@
 // File: src/ui/app.rs
 use eframe::egui;
-
 use crate::engine::CSpaceEngine;
 use super::main_menu;
 use super::plant::PlantCreatorApp;
 use super::simulation::SimulationView;
+use std::rc::Rc;
+use std::cell::RefCell;  // Add these imports at the top
 
 // Application states for navigation
 pub enum AppState {
@@ -45,16 +46,35 @@ impl eframe::App for CSpaceApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             match self.state {
                 AppState::MainMenu => {
-                    let mut on_plant_creator = || self.state = AppState::PlantCreator;
-                    let mut on_continue = || self.state = AppState::Simulation;
+                    // CHANGE HERE: Use Rc<RefCell<>> to allow multiple mutable borrows
+                    let state = Rc::new(RefCell::new(&mut self.state));
+                    let state_clone1 = state.clone();
+                    let state_clone2 = state.clone();
+                    
+                    let mut on_plant_creator = move || {
+                        **state_clone1.borrow_mut() = AppState::PlantCreator;
+                    };
+                    
+                    let mut on_continue = move || {
+                        **state_clone2.borrow_mut() = AppState::Simulation;
+                    };
+                    
                     main_menu::render_main_menu(ui, &mut on_plant_creator, &mut on_continue, self.simulation.is_some());
                 },
                 AppState::PlantCreator => {
-                    // Handle navigation from plant creator
-                    let mut back_to_main = || self.state = AppState::MainMenu;
-                    let mut launch_simulation = |engine: CSpaceEngine| {
-                        self.simulation = Some(SimulationView::new(engine));
-                        self.state = AppState::Simulation;
+                    // CHANGE HERE: Use Rc<RefCell<>> for the second set of closures
+                    let state = Rc::new(RefCell::new(&mut self.state));
+                    let state_clone1 = state.clone();
+                    let state_clone2 = state.clone();
+                    let simulation_ref = Rc::new(RefCell::new(&mut self.simulation));
+                    
+                    let mut back_to_main = move || {
+                        **state_clone1.borrow_mut() = AppState::MainMenu;
+                    };
+                    
+                    let mut launch_simulation = move |engine: CSpaceEngine| {
+                        **simulation_ref.borrow_mut() = Some(SimulationView::new(engine));
+                        **state_clone2.borrow_mut() = AppState::Simulation;
                     };
                     
                     // Render the plant creator
@@ -62,7 +82,14 @@ impl eframe::App for CSpaceApp {
                 },
                 AppState::Simulation => {
                     if let Some(simulation) = &mut self.simulation {
-                        let mut on_back = || self.state = AppState::MainMenu;
+                        // CHANGE HERE: For consistency, use the same pattern
+                        let state = Rc::new(RefCell::new(&mut self.state));
+                        let state_clone = state.clone();
+                        
+                        let mut on_back = move || {
+                            **state_clone.borrow_mut() = AppState::MainMenu;
+                        };
+                        
                         simulation.render(ctx, ui, &mut on_back);
                     } else {
                         // Fallback if simulation is not available
