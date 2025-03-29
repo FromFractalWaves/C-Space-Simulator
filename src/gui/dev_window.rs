@@ -1,15 +1,13 @@
 use gtk4::prelude::*;
 use gtk4::{ApplicationWindow, Box as GtkBox, Label, ScrolledWindow, TextView, Orientation, Align};
-use glib::ControlFlow;
-use glib::timeout_add;
+use glib::source::idle_add;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
 pub fn build_dev_window(
-    app: &gtk4::Application, // Fixed syntax from >k4::Application
+    app: gtk4::Application,
     logs: Arc<Mutex<Vec<String>>>,
 ) -> ApplicationWindow {
-    let window = ApplicationWindow::new(app);
+    let window = ApplicationWindow::new(&app);
     window.set_title(Some("Development Logs"));
     window.set_default_size(300, 400);
 
@@ -29,12 +27,17 @@ pub fn build_dev_window(
     scroll.set_vexpand(true);
     container.append(&scroll);
 
-    timeout_add(Duration::from_millis(100), glib::clone!(@weak text_view => move || {
-        let logs = logs.lock().unwrap();
-        let text = logs.join("\n");
-        text_view.buffer().set_text(&text);
-        ControlFlow::Continue // Ensure no semicolon here
-    }));
+    // Use glib::clone! to safely capture a weak reference to text_view
+    let text_view_weak = text_view.downgrade(); // Create a weak reference to avoid ownership issues
+    glib::source::timeout_add_local(std::time::Duration::from_millis(100),move || {
+        // Upgrade the weak reference to a strong one, if the widget still exists
+        if let Some(text_view) = text_view_weak.upgrade() {
+            let logs = logs.lock().unwrap();
+            let text = logs.join("\n");
+            text_view.buffer().set_text(&text);
+        }
+        glib::ControlFlow::Continue
+    });
 
     window.set_child(Some(&container));
     window
