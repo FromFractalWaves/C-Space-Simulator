@@ -1,4 +1,5 @@
 // src/main.rs
+mod control; // Add this line
 mod engines;
 mod gui;
 mod plants;

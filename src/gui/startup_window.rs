@@ -1,23 +1,19 @@
 use gtk4::prelude::*;
 use gtk4::Application;
 use gtk4::{ApplicationWindow, Button, Box as GtkBox, Orientation};
-use glib::source::idle_add;
-use crate::engines::plant_engine::PlantEngine;
+use crate::control::SimulationControl;
 use crate::gui::{
     control_window, dev_window, environment_window, plant_diagnostics_window, simulation_window,
 };
-use std::sync::{Arc, Mutex};
+use crate::simulation::simulation_env::SimulationEnv;
+use std::sync::Arc;
 
 pub fn launch() {
     let app = Application::new(Some("com.example.simulator"), Default::default());
 
     app.connect_activate(move |app| {
-        let env = crate::simulation::simulation_env::SimulationEnv::new();
-        let plants_shared = Arc::new(Mutex::new(env.plants.clone()));
-        let environment_shared = Arc::new(Mutex::new(env.environment.clone()));
-        let logs = Arc::new(Mutex::new(Vec::new()));
-        let engine = Arc::new(Mutex::new(PlantEngine::new(env)));
-
+        let env = SimulationEnv::new();
+        let control = Arc::new(SimulationControl::new(env));
         let app_clone = app.clone();
 
         let window = ApplicationWindow::builder()
@@ -42,15 +38,11 @@ pub fn launch() {
         vbox.append(&diag_btn);
         vbox.append(&sim_btn);
 
-        // Clone shared data for each closure
-        let environment_shared_control = environment_shared.clone();
-        let logs_dev = logs.clone();
-        let environment_shared_env = environment_shared.clone();
-        let plants_shared_diag = plants_shared.clone();
-        let plants_shared_sim = plants_shared.clone();
-        let logs_sim = logs.clone();
-        let environment_shared_sim = environment_shared.clone();
-        let engine_sim = engine.clone();
+        let control_control = control.clone();
+        let control_dev = control.clone();
+        let control_env = control.clone();
+        let control_diag = control.clone();
+        let control_sim = control.clone();
         let app_clone_control = app_clone.clone();
         let app_clone_dev = app_clone.clone();
         let app_clone_env = app_clone.clone();
@@ -60,23 +52,21 @@ pub fn launch() {
         control_btn.connect_clicked(move |_| {
             let control_win = control_window::build_control_window(
                 app_clone_control.clone(),
-                environment_shared_control.clone(),
+                control_control.environment(),
+                control_control.clone(),
             );
             control_win.present();
         });
 
         dev_btn.connect_clicked(move |_| {
-            let dev_win = dev_window::build_dev_window(
-                app_clone_dev.clone(),
-                logs_dev.clone(),
-            );
+            let dev_win = dev_window::build_dev_window(app_clone_dev.clone(), control_dev.logs());
             dev_win.present();
         });
 
         env_btn.connect_clicked(move |_| {
             let env_win = environment_window::build_environment_window(
                 app_clone_env.clone(),
-                environment_shared_env.clone(),
+                control_env.environment(),
             );
             env_win.present();
         });
@@ -84,55 +74,22 @@ pub fn launch() {
         diag_btn.connect_clicked(move |_| {
             let diag_win = plant_diagnostics_window::build_plant_diagnostics_window(
                 app_clone_diag.clone(),
-                plants_shared_diag.clone(),
+                control_diag.plants(),
             );
             diag_win.present();
         });
 
         sim_btn.connect_clicked(move |_| {
-            let mut engine_locked = engine_sim.lock().unwrap();
+            let engine_lock = control_sim.engine(); // Store the Arc
+            let mut engine = engine_lock.lock().unwrap(); // Lock it and keep the guard alive
             let sim_win = simulation_window::build_simulation_window(
                 app_clone_sim.clone(),
-                plants_shared_sim.clone(),
-                &mut engine_locked,
-                logs_sim.clone(),
-                environment_shared_sim.clone(),
+                control_sim.plants(),
+                &mut engine,
+                control_sim.logs(),
+                control_sim.environment(),
             );
             sim_win.present();
-        });
-
-        let engine_idle = engine.clone();
-        let plants_shared_idle = plants_shared.clone();
-        let environment_shared_idle = environment_shared.clone();
-        let logs_idle = logs.clone();
-
-        idle_add(move || {
-            let dt = 0.1;
-            let mut engine = engine_idle.lock().unwrap();
-            let results = engine.update(dt);
-
-            {
-                let mut logs = logs_idle.lock().unwrap();
-                for plant_results in results {
-                    for result in plant_results {
-                        logs.push(result.log);
-                        if logs.len() > 100 {
-                            logs.remove(0);
-                        }
-                    }
-                }
-            }
-
-            {
-                let mut plants = plants_shared_idle.lock().unwrap();
-                *plants = engine.env.plants.clone();
-            }
-            {
-                let mut env = environment_shared_idle.lock().unwrap();
-                *env = engine.env.environment.clone();
-            }
-
-            glib::ControlFlow::Continue
         });
 
         window.present();
