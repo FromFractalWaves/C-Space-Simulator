@@ -1,15 +1,17 @@
+// src/gui/simulation_window.rs
 use gtk4::prelude::*;
 use gtk4::{ApplicationWindow, DrawingArea};
 use crate::plants::tropisms::Plant;
 use crate::engines::plant_engine::PlantEngine;
 use std::sync::{Arc, Mutex};
+use std::rc::Rc; // Add this import
 
 pub fn build_simulation_window(
     app: gtk4::Application,
     plants: Arc<Mutex<Vec<Plant>>>,
-    engine: &mut PlantEngine, // Pass engine reference to access updated state
-    logs: Arc<Mutex<Vec<String>>>, // For logging if needed
-    environment: Arc<Mutex<crate::plants::tropisms::Environment>>, // Environment reference
+    engine: &mut PlantEngine,
+    logs: Arc<Mutex<Vec<String>>>,
+    environment: Arc<Mutex<crate::plants::tropisms::Environment>>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
     window.set_title(Some("Simulation View"));
@@ -65,9 +67,11 @@ pub fn build_simulation_window(
         cr.fill().unwrap();
     });
 
-    // Connect to queue_draw when the window is shown to ensure continuous updates
+    // Create a clone of drawing_area before moving it into the closure
+    let drawing_area_clone = drawing_area.clone();
+    
     window.connect_show(move |_| {
-        drawing_area.queue_draw();
+        drawing_area_clone.queue_draw();
     });
 
     window.set_child(Some(&drawing_area));
