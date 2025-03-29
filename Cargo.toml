@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-eframe = "0.27.2"
-egui = "0.27.2"
-nalgebra = "0.32.3"
-rand = "0.8.5"
+gtk = { version = "0.18", features = ["v4_10"] }
+gio = "0.18"
+cairo-rs = "0.18"
+nalgebra = "0.32" # Assuming this is the version you're using
+std = "1.74" # For Arc, Mutex, etc.

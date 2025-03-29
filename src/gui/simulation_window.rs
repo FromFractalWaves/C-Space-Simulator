@@ -1,60 +1,56 @@
-use eframe::egui;
+use gtk::prelude::*;
+use gtk::{ApplicationWindow, DrawingArea};
 use crate::plants::tropisms::Plant;
 use std::sync::{Arc, Mutex};
 
-pub struct SimulationWindow {
-    plants: Arc<Mutex<Vec<Plant>>>, // Shared reference to the plants
-}
+pub fn build_simulation_window(
+    app: &gtk::Application,
+    plants: Arc<Mutex<Vec<Plant>>>,
+) -> ApplicationWindow {
+    let window = ApplicationWindow::new(app);
+    window.set_title(Some("Simulation View"));
+    window.set_default_size(400, 400);
 
-impl SimulationWindow {
-    pub fn new(plants: Arc<Mutex<Vec<Plant>>>) -> Self {
-        Self { plants }
-    }
-}
+    let drawing_area = DrawingArea::new();
+    drawing_area.set_size_request(400, 400);
 
-impl eframe::App for SimulationWindow {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let plants = self.plants.lock().unwrap();
-        egui::Window::new("Simulation View")
-            .id(egui::Id::new("simulation_view"))
-            .default_pos([300.0, 0.0])
-            .default_size([400.0, 400.0])
-            .show(ctx, |ui| {
-                ui.heading("Plant Simulation");
+    let plants_clone = plants.clone();
+    drawing_area.set_draw_func(move |_area, cr, width, height| {
+        let plants = plants_clone.lock().unwrap();
+        let scale = 20.0;
+        let center_x = width as f64 / 2.0;
+        let center_y = height as f64 / 2.0;
 
-                let painter = ui.painter();
-                let rect = ui.available_rect_before_wrap();
-                let scale = 20.0;
-                let center = rect.center();
+        for plant in plants.iter() {
+            let pos_x = center_x + plant.pos.x as f64 * scale;
+            let pos_y = center_y - plant.pos.y as f64 * scale;
 
-                for plant in plants.iter() {
-                    let pos = center + egui::Vec2::new(
-                        plant.pos.x * scale,
-                        -plant.pos.y * scale,
-                    );
+            let stem_x = pos_x + plant.stem_dir.x as f64 * scale;
+            let stem_y = pos_y - plant.stem_dir.y as f64 * scale;
+            let root_x = pos_x + plant.root_dir.x as f64 * scale;
+            let root_y = pos_y - plant.root_dir.y as f64 * scale;
 
-                    let stem_end = pos + egui::Vec2::new(
-                        plant.stem_dir.x * scale,
-                        -plant.stem_dir.y * scale,
-                    );
-                    painter.line_segment(
-                        [pos.into(), stem_end.into()],
-                        egui::Stroke::new(2.0, egui::Color32::GREEN),
-                    );
+            cr.set_source_rgb(0.0, 1.0, 0.0); // Green for stem
+            cr.move_to(pos_x, pos_y);
+            cr.line_to(stem_x, stem_y);
+            cr.stroke().unwrap();
 
-                    let root_end = pos + egui::Vec2::new(
-                        plant.root_dir.x * scale,
-                        -plant.root_dir.y * scale,
-                    );
-                    painter.line_segment(
-                        [pos.into(), root_end.into()],
-                        egui::Stroke::new(2.0, egui::Color32::BROWN),
-                    );
+            cr.set_source_rgb(0.65, 0.16, 0.16); // Brown for root
+            cr.move_to(pos_x, pos_y);
+            cr.line_to(root_x, root_y);
+            cr.stroke().unwrap();
 
-                    painter.circle_filled(pos.into(), 3.0, egui::Color32::RED);
-                }
-            });
+            cr.set_source_rgb(1.0, 0.0, 0.0); // Red for position
+            cr.arc(pos_x, pos_y, 3.0, 0.0, 2.0 * std::f64::consts::PI);
+            cr.fill().unwrap();
+        }
+    });
 
-        ctx.request_repaint();
-    }
+    gtk::timeout_add(16, move || {
+        drawing_area.queue_draw();
+        Continue(true)
+    });
+
+    window.set_child(Some(&drawing_area));
+    window
 }

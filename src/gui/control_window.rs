@@ -1,51 +1,87 @@
-use eframe::egui;
+use gtk::prelude::*;
+use gtk::{ApplicationWindow, Box as GtkBox, Button, Label, Scale};
 use nalgebra::Vector3;
 use crate::plants::tropisms::Environment;
 use std::sync::{Arc, Mutex};
 
-pub struct ControlWindow {
-    environment: Arc<Mutex<Environment>>, // Shared reference to the environment
-}
+pub fn build_control_window(
+    app: &gtk::Application,
+    environment: Arc<Mutex<Environment>>,
+) -> ApplicationWindow {
+    let window = ApplicationWindow::new(app);
+    window.set_title(Some("Control Panel"));
+    window.set_default_size(300, 400);
 
-impl ControlWindow {
-    pub fn new(environment: Arc<Mutex<Environment>>) -> Self {
-        Self { environment }
-    }
-}
+    let container = GtkBox::new(gtk::Orientation::Vertical, 10);
+    container.set_margin_all(10);
 
-impl eframe::App for ControlWindow {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut env = self.environment.lock().unwrap();
-        egui::Window::new("Control Panel")
-            .id(egui::Id::new("control_panel")) // Unique ID within this viewport
-            .default_pos([0.0, 0.0])
-            .show(ctx, |ui| {
-                ui.heading("Environment Controls");
+    // Light Position
+    let light_x = Scale::with_range(gtk::Orientation::Horizontal, -10.0, 10.0, 0.1);
+    light_x.set_value(environment.lock().unwrap().light_pos.x as f64);
+    container.append(&Label::new(Some("Light Pos X:")));
+    container.append(&light_x);
 
-                ui.horizontal(|ui| {
-                    ui.label("Light Pos X:");
-                    ui.add(egui::DragValue::new(&mut env.light_pos.x).speed(0.1));
-                    ui.label("Y:");
-                    ui.add(egui::DragValue::new(&mut env.light_pos.y).speed(0.1));
-                });
+    let light_y = Scale::with_range(gtk::Orientation::Horizontal, -10.0, 10.0, 0.1);
+    light_y.set_value(environment.lock().unwrap().light_pos.y as f64);
+    container.append(&Label::new(Some("Light Pos Y:")));
+    container.append(&light_y);
 
-                ui.horizontal(|ui| {
-                    ui.label("Water Pos X:");
-                    ui.add(egui::DragValue::new(&mut env.water_pos.x).speed(0.1));
-                    ui.label("Y:");
-                    ui.add(egui::DragValue::new(&mut env.water_pos.y).speed(0.1));
-                });
+    // Water Position
+    let water_x = Scale::with_range(gtk::Orientation::Horizontal, -10.0, 10.0, 0.1);
+    water_x.set_value(environment.lock().unwrap().water_pos.x as f64);
+    container.append(&Label::new(Some("Water Pos X:")));
+    container.append(&water_x);
 
-                ui.add(egui::Slider::new(&mut env.light_intensity, 0.0..=2.0).text("Light Intensity"));
-                ui.add(egui::Slider::new(&mut env.water_level, 0.0..=2.0).text("Water Level"));
+    let water_y = Scale::with_range(gtk::Orientation::Horizontal, -10.0, 10.0, 0.1);
+    water_y.set_value(environment.lock().unwrap().water_pos.y as f64);
+    container.append(&Label::new(Some("Water Pos Y:")));
+    container.append(&water_y);
 
-                if ui.button("Add Obstacle").clicked() {
-                    env.obstacles.push(Vector3::new(1.0, 1.0, 0.0));
-                }
+    // Light Intensity and Water Level
+    let light_intensity = Scale::with_range(gtk::Orientation::Horizontal, 0.0, 2.0, 0.01);
+    light_intensity.set_value(environment.lock().unwrap().light_intensity as f64);
+    container.append(&Label::new(Some("Light Intensity:")));
+    container.append(&light_intensity);
 
-                ui.label(format!("Obstacles: {}", env.obstacles.len()));
-            });
+    let water_level = Scale::with_range(gtk::Orientation::Horizontal, 0.0, 2.0, 0.01);
+    water_level.set_value(environment.lock().unwrap().water_level as f64);
+    container.append(&Label::new(Some("Water Level:")));
+    container.append(&water_level);
 
-        ctx.request_repaint();
-    }
+    // Add Obstacle Button
+    let add_obstacle = Button::with_label("Add Obstacle");
+    container.append(&add_obstacle);
+
+    // Connect signals
+    let env = environment.clone();
+    light_x.connect_value_changed(move |scale| {
+        env.lock().unwrap().light_pos.x = scale.value() as f32;
+    });
+    let env = environment.clone();
+    light_y.connect_value_changed(move |scale| {
+        env.lock().unwrap().light_pos.y = scale.value() as f32;
+    });
+    let env = environment.clone();
+    water_x.connect_value_changed(move |scale| {
+        env.lock().unwrap().water_pos.x = scale.value() as f32;
+    });
+    let env = environment.clone();
+    water_y.connect_value_changed(move |scale| {
+        env.lock().unwrap().water_pos.y = scale.value() as f32;
+    });
+    let env = environment.clone();
+    light_intensity.connect_value_changed(move |scale| {
+        env.lock().unwrap().light_intensity = scale.value() as f32;
+    });
+    let env = environment.clone();
+    water_level.connect_value_changed(move |scale| {
+        env.lock().unwrap().water_level = scale.value() as f32;
+    });
+    let env = environment.clone();
+    add_obstacle.connect_clicked(move |_| {
+        env.lock().unwrap().obstacles.push(Vector3::new(1.0, 1.0, 0.0));
+    });
+
+    window.set_child(Some(&container));
+    window
 }

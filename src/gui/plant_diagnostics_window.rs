@@ -1,81 +1,102 @@
-// src/gui/plant_diagnostics_window.rs
-use eframe::egui;
+use gtk::prelude::*;
+use gtk::{ApplicationWindow, Box as GtkBox, ComboBoxText, DrawingArea, Label};
 use crate::plants::tropisms::Plant;
 use std::sync::{Arc, Mutex};
 
-pub struct PlantDiagnosticsWindow {
-    plants: Arc<Mutex<Vec<Plant>>>, // Shared reference to the plants
-    selected_plant: Option<usize>,  // Index of the selected plant
-}
+pub fn build_plant_diagnostics_window(
+    app: &gtk::Application,
+    plants: Arc<Mutex<Vec<Plant>>>,
+) -> ApplicationWindow {
+    let window = ApplicationWindow::new(app);
+    window.set_title(Some("Plant Diagnostics"));
+    window.set_default_size(300, 400);
 
-impl PlantDiagnosticsWindow {
-    pub fn new(plants: Arc<Mutex<Vec<Plant>>>) -> Self {
-        Self {
-            plants,
-            selected_plant: None,
+    let container = GtkBox::new(gtk::Orientation::Vertical, 10);
+    container.set_margin_all(10);
+
+    let combo = ComboBoxText::new();
+    combo.append_text("None");
+    {
+        let plants = plants.lock().unwrap();
+        for i in 0..plants.len() {
+            combo.append_text(&format!("Plant {}", i));
         }
     }
-}
+    combo.set_active(Some(0));
+    container.append(&Label::new(Some("Select Plant:")));
+    container.append(&combo);
 
-impl eframe::App for PlantDiagnosticsWindow {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let plants = self.plants.lock().unwrap();
-        egui::Window::new("Plant Diagnostics")
-            .id(egui::Id::new("plant_diagnostics"))
-            .default_pos([900.0, 0.0])
-            .default_size([300.0, 400.0])
-            .show(ctx, |ui| {
-                ui.heading("Plant Diagnostics");
+    let details = GtkBox::new(gtk::Orientation::Vertical, 5);
+    let drawing_area = DrawingArea::new();
+    drawing_area.set_size_request(200, 200);
 
-                // Plant selection dropdown
-                ui.horizontal(|ui| {
-                    ui.label("Select Plant:");
-                    egui::ComboBox::from_id_source("plant_selector")
-                        .selected_text(
-                            self.selected_plant
-                                .map_or("None".to_string(), |i| format!("Plant {}", i))
-                        )
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.selected_plant, None, "None");
-                            for (i, _) in plants.iter().enumerate() {
-                                ui.selectable_value(&mut self.selected_plant, Some(i), format!("Plant {}", i));
-                            }
-                        });
-                });
+    container.append(&details);
+    container.append(&drawing_area);
 
-                // Display selected plant details
-                if let Some(idx) = self.selected_plant {
-                    if let Some(plant) = plants.get(idx) {
-                        ui.group(|ui| {
-                            ui.label(format!("Position: {:?}", plant.pos));
-                            ui.label(format!("Stem Direction: {:?}", plant.stem_dir));
-                            ui.label(format!("Root Direction: {:?}", plant.root_dir));
-                            ui.label(format!("Energy: {:.2}", plant.energy));
-                            ui.label(format!("Coherence: {:.2}", plant.coherence));
-                            ui.label(format!("Distortion: {:.2}", plant.distortion));
-                            ui.label(format!("Temporal Complexity: {:.2}", plant.temporal_complexity));
-                            ui.label(format!("Spatial Complexity: {:.2}", plant.spatial_complexity));
-                        });
+    let plants_clone = plants.clone();
+    combo.connect_changed(move |combo| {
+        let idx = combo.active().unwrap_or(0) as usize;
+        let plants = plants_clone.lock().unwrap();
+        details.foreach(|child| details.remove(child));
 
-                        // Simple visualization
-                        let painter = ui.painter();
-                        let rect = ui.available_rect_before_wrap();
-                        let scale = 20.0;
-                        let center = rect.center();
+        if idx > 0 && idx - 1 < plants.len() {
+            if let Some(plant) = plants.get(idx - 1) {
+                details.append(&Label::new(Some(&format!("Position: {:?}", plant.pos))));
+                details.append(&Label::new(Some(&format!("Stem Direction: {:?}", plant.stem_dir))));
+                details.append(&Label::new(Some(&format!("Root Direction: {:?}", plant.root_dir))));
+                details.append(&Label::new(Some(&format!("Energy: {:.2}", plant.energy))));
+                details.append(&Label::new(Some(&format!("Coherence: {:.2}", plant.coherence))));
+                details.append(&Label::new(Some(&format!("Distortion: {:.2}", plant.distortion))));
+                details.append(&Label::new(Some(&format!(
+                    "Temporal Complexity: {:.2}",
+                    plant.temporal_complexity
+                ))));
+                details.append(&Label::new(Some(&format!(
+                    "Spatial Complexity: {:.2}",
+                    plant.spatial_complexity
+                ))));
+            }
+        } else {
+            details.append(&Label::new(Some("No plant selected.")));
+        }
+        drawing_area.queue_draw();
+    });
 
-                        let pos = center + egui::Vec2::new(plant.pos.x * scale, -plant.pos.y * scale);
-                        let stem_end = pos + egui::Vec2::new(plant.stem_dir.x * scale, -plant.stem_dir.y * scale);
-                        let root_end = pos + egui::Vec2::new(plant.root_dir.x * scale, -plant.root_dir.y * scale);
+    let plants_clone = plants.clone();
+    drawing_area.set_draw_func(move |_area, cr, width, height| {
+        let plants = plants_clone.lock().unwrap();
+        let idx = combo.active().unwrap_or(0) as usize;
+        if idx > 0 && idx - 1 < plants.len() {
+            if let Some(plant) = plants.get(idx - 1) {
+                let scale = 20.0;
+                let center_x = width as f64 / 2.0;
+                let center_y = height as f64 / 2.0;
 
-                        painter.line_segment([pos.into(), stem_end.into()], egui::Stroke::new(2.0, egui::Color32::GREEN));
-                        painter.line_segment([pos.into(), root_end.into()], egui::Stroke::new(2.0, egui::Color32::BROWN));
-                        painter.circle_filled(pos.into(), 3.0, egui::Color32::RED);
-                    }
-                } else {
-                    ui.label("No plant selected.");
-                }
-            });
+                let pos_x = center_x + plant.pos.x as f64 * scale;
+                let pos_y = center_y - plant.pos.y as f64 * scale;
 
-        ctx.request_repaint();
-    }
+                let stem_x = pos_x + plant.stem_dir.x as f64 * scale;
+                let stem_y = pos_y - plant.stem_dir.y as f64 * scale;
+                let root_x = pos_x + plant.root_dir.x as f64 * scale;
+                let root_y = pos_y - plant.root_dir.y as f64 * scale;
+
+                cr.set_source_rgb(0.0, 1.0, 0.0); // Green for stem
+                cr.move_to(pos_x, pos_y);
+                cr.line_to(stem_x, stem_y);
+                cr.stroke().unwrap();
+
+                cr.set_source_rgb(0.65, 0.16, 0.16); // Brown for root
+                cr.move_to(pos_x, pos_y);
+                cr.line_to(root_x, root_y);
+                cr.stroke().unwrap();
+
+                cr.set_source_rgb(1.0, 0.0, 0.0); // Red for position
+                cr.arc(pos_x, pos_y, 3.0, 0.0, 2.0 * std::f64::consts::PI);
+                cr.fill().unwrap();
+            }
+        }
+    });
+
+    window.set_child(Some(&container));
+    window
 }
