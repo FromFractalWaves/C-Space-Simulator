@@ -16,7 +16,7 @@ impl eframe::App for SimulatorLauncher {
                 ui.add_space(10.0);
                 ui.label("@FractalWaves");
                 ui.add_space(5.0);
-                ui.label("C-Space Framework Implementation");
+                ui.label("Computational Manifold Framework");
             });
         });
     }
@@ -32,7 +32,7 @@ pub fn launch() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "C-Space Simulators",
+        "C-Space Simulator",
         options,
         Box::new(|cc| Box::new(SimulatorLauncher::new(cc))),
     )
