@@ -1,7 +1,7 @@
 // src/engines/tropisms.rs
-use nalgebra::{Vector3, Norm, Matrix3}; // For vector and matrix operations
+use nalgebra::{Vector3, Matrix3}; // For vector and matrix operations
 use rand::Rng; // For variability in environmental responses
-use std::f32::consts::PI;
+
 
 /// Represents a plant as a computational entity in the C-Space manifold
 #[derive(Debug)]

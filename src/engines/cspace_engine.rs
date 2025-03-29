@@ -1,5 +1,5 @@
 // src/engines/cspace_engine.rs
-use nalgebra::{Vector3, Matrix3};
+use nalgebra::Matrix3;
 use crate::plants::tropisms::{Plant, Environment};
 
 pub struct CSpaceEngine {
@@ -14,9 +14,9 @@ impl CSpaceEngine {
 
     pub fn update(&mut self, dt: f32) {
         for plant in &mut self.plants {
-            // Placeholder: Update manifold properties without altering plant state
-            let rho_c = self.compute_complex_density(&plant);
-            let metric = self.compute_metric_tensor(plant.energy, plant.distortion);
+            // Pass plant data directly instead of borrowing self
+            let rho_c = Self::compute_complex_density(plant);
+            let metric = Self::compute_metric_tensor(plant.energy, plant.distortion);
             self.environment.metric_tensor = metric; // Update environment's metric tensor
             println!(
                 "CSpace Update: Plant at {:?}, ρ_c={:.2}, metric={:?}",
@@ -25,11 +25,11 @@ impl CSpaceEngine {
         }
     }
 
-    fn compute_complex_density(&self, plant: &Plant) -> f32 {
+    fn compute_complex_density(plant: &Plant) -> f32 {
         (plant.spatial_complexity.powi(2) + plant.temporal_complexity.powi(2)).sqrt() * plant.energy
     }
 
-    fn compute_metric_tensor(&self, energy: f32, distortion: f32) -> Matrix3<f32> {
+    fn compute_metric_tensor(energy: f32, distortion: f32) -> Matrix3<f32> {
         let epsilon = 1e-6;
         Matrix3::new(
             1.0 / (energy * energy), 0.0, 0.0,
