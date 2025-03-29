@@ -1,3 +1,6 @@
+C-Space Simulation Visualizer (CSSV)
+A modular application for visualizing the Computational Spacetime Framework.
+
 cs_simulator/
 ├── src/
 │   ├── main.rs                # Main application entry point
