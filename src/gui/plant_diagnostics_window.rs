@@ -12,7 +12,10 @@ pub fn build_plant_diagnostics_window(
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);
-    container.set_margin_all(10);
+    container.set_margin_start(10);
+    container.set_margin_end(10);
+    container.set_margin_top(10);
+    container.set_margin_bottom(10);
 
     let combo = ComboBoxText::new();
     combo.append_text("None");

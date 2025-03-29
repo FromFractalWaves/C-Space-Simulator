@@ -9,7 +9,10 @@ pub fn build_dev_window(app: gtk4::Application, logs: Arc<Mutex<Vec<String>>>) -
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);
-    container.set_margin_all(10);
+    container.set_margin_start(10);
+    container.set_margin_end(10);
+    container.set_margin_top(10);
+    container.set_margin_bottom(10);
 
     let header = Label::new(Some("Tropism Logs"));
     header.set_halign(Align::Start);

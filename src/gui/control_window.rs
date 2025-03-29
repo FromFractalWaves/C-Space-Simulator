@@ -13,7 +13,10 @@ pub fn build_control_window(
     window.set_default_size(300, 400);
 
     let container = GtkBox::new(Orientation::Vertical, 10);
-    container.set_margin_all(10);
+    container.set_margin_start(10);
+    container.set_margin_end(10);
+    container.set_margin_top(10);
+    container.set_margin_bottom(10);
 
     let light_x = Scale::with_range(Orientation::Horizontal, -10.0, 10.0, 0.1);
     light_x.set_value(environment.lock().unwrap().light_pos.x as f64);
