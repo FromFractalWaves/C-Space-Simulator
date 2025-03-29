@@ -1,11 +1,10 @@
-
 // File: src/ui/simulation.rs
-use eframe::egui::{self, Color32, Pos2, RichText, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Stroke};
 use crate::engine::{CSpaceEngine, Vector2D};
 
 pub struct SimulationView {
     engine: CSpaceEngine,
-    simulation_running: bool,
+    pub simulation_running: bool,  // Make this public
     simulation_speed: f32,
     current_step: i32,
 }

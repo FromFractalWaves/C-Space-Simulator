@@ -1,5 +1,5 @@
 // File: src/ui/common.rs
-use eframe::egui::{self, Color32, Stroke, RichText, Vec2};
+use eframe::egui::{self, RichText};
 
 #[derive(Clone)]
 pub struct SimulationParams {
