@@ -1,8 +1,7 @@
 // File: src/ui/plant.rs
 use eframe::egui::{self, Color32, Pos2, RichText, Stroke, Vec2};
-use rand::Rng;
 
-use crate::engine::{CSpaceEngine, EngineParams, Vector2D};
+use crate::engine::{CSpaceEngine, EngineParams};
 use super::common::{SimulationParams, ParamTab, draw_cspace_params, draw_plant_params, draw_environment_params};
 
 pub struct PlantCreatorApp {
@@ -44,7 +43,7 @@ impl PlantCreatorApp {
         }
     }
     
-    pub fn initialize_simulation(&mut self) -> CSpaceEngine {
+    pub fn initialize_simulation(&self) -> CSpaceEngine {
         // Create engine parameters from the UI params
         let engine_params = EngineParams {
             alpha: self.params.alpha,
@@ -135,8 +134,13 @@ impl PlantCreatorApp {
                             ParamTab::CSpace => draw_cspace_params(ui, &mut self.params),
                             ParamTab::Plant => draw_plant_params(ui, &mut self.params),
                             ParamTab::Environment => {
+                                // Create a local copy of the regenerate function to avoid
+                                // borrowing self.params more than once
+                                let params_copy = &mut self.params.clone();
                                 let mut regenerate = || self.regenerate_light_positions();
-                                draw_environment_params(ui, &mut self.params, &mut regenerate)
+                                draw_environment_params(ui, params_copy, &mut regenerate);
+                                // Update the original params with the modified copy
+                                self.params = params_copy.clone();
                             },
                         }
                     });
@@ -265,7 +269,7 @@ impl PlantCreatorApp {
 
 // Implementation for when PlantCreatorApp is used as a standalone app
 impl eframe::App for PlantCreatorApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // Set app-wide visuals
         let mut style = (*ctx.style()).clone();
         style.visuals.window_rounding = 6.0.into();
@@ -279,9 +283,7 @@ impl eframe::App for PlantCreatorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             // In standalone mode, quitting is the only "back" option
             let mut on_back = || {
-                if let Some(frame) = _frame {
-                    frame.close();
-                }
+                frame.close = true;
             };
             
             // In standalone mode, we can't actually start the simulation,
