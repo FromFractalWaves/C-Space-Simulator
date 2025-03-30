@@ -5,18 +5,18 @@ mod plants;
 mod simulation;
 
 use crate::gui::startup_window::launch_with_runner;
-use crate::simulation::simulation_runner::SimulationRunner;
-use crate::simulation::simulation_env::SimulationEnv;
-use std::sync::Arc;
+use std::sync::mpsc::channel;
 
 fn main() {
-    let env = SimulationEnv::new();
-    let control = Arc::new(control::SimulationControl::new(env));
-    let (runner, command_sender, log_receiver) = SimulationRunner::new(control.clone());
+    println!("Starting main function...");
 
-    std::thread::spawn(move || {
-        runner.run();
-    });
+    // Create channels for communication
+    let (command_sender, command_receiver) = channel();
+    let (_log_sender, log_receiver) = channel();
 
+    println!("Launching GTK application...");
+    // Launch GTK app with channels; SimulationRunner will be started later via dev_window
     launch_with_runner(command_sender, log_receiver);
+
+    println!("GTK application exited.");
 }
