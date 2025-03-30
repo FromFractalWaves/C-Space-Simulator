@@ -28,30 +28,6 @@ C-Plants represents plants as entities that:
 
 
 
+ok so now that dev_window starts cli.rs in the terminal, lets modify cli.rs to feel more like home and allow us to add files to src/bin/ for more commands
 
-control window must set up simulation_env
-
-To refactor simulation_runner.rs into an event loop that operates independently of GTK, managing the engines, control, and simulation, we'll need to:
-
-    Redesign SimulationRunner as a standalone event loop: Replace the GTK idle_add and thread-based approach with a custom loop using Rust's standard library or a lightweight async framework (e.g., tokio or a simple loop with timing control).
-    Integrate engines and control: Ensure the loop interacts with PlantEngine, CSpaceEngine, and SimulationControl in a cohesive manner.
-    Enable CLI control via dev_window: Use the vte4 terminal in dev_window.rs to accept commands (e.g., start, stop, status) and communicate them to the runner via a channel.
-
-Below, I'll outline the steps and provide modified code for simulation_runner.rs and dev_window.rs to achieve this.
-
-How It Works
-
-    Runner Event Loop:
-        Runs in a separate thread, independent of GTK.
-        Listens for ControlCommands via a channel and updates the simulation accordingly.
-        Sends TropismResults back via another channel.
-    CLI Control via Dev Window:
-        The VTE terminal in dev_window displays logs and accepts commands.
-        Typing start, stop, or status sends the corresponding ControlCommand to the runner.
-    Integration:
-        main.rs spawns the runner and passes the command sender and log receiver to the GUI.
-        Other windows (e.g., simulation_window) continue to visualize the shared state.
-
-to do
-
-launch startup --> open dev_window --> get simulation status
+like simulator.rs and help.rs etc

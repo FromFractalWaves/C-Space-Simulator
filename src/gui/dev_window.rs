@@ -1,19 +1,17 @@
 // src/gui/dev_window.rs
 use gtk4::prelude::*;
 use gtk4::{ApplicationWindow, Box as GtkBox, Label, Orientation, Align};
-use gtk4::gio; // Import gio for gio::Cancellable
+use gtk4::gio; // For gio::Cancellable
 use vte4::Terminal as VteTerminal;
-use vte4::{TerminalExt, TerminalExtManual}; // Import TerminalExtManual for spawn_async
+use vte4::{TerminalExt, TerminalExtManual}; // For spawn_async
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::Receiver;
 use crate::plants::tropisms::TropismResult;
-use crate::simulation::simulation_runner::ControlCommand;
 
 pub fn build_dev_window(
     app: gtk4::Application,
     logs: Arc<Mutex<Vec<String>>>,
     log_receiver: Arc<Mutex<Receiver<Vec<Vec<TropismResult>>>>>,
-    command_sender: Sender<ControlCommand>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
     window.set_title(Some("Development Logs & CLI"));
@@ -42,7 +40,7 @@ pub fn build_dev_window(
         glib::SpawnFlags::DEFAULT,
         || {},
         -1,
-        None::<&gio::Cancellable>, // Now gio::Cancellable is recognized
+        None::<&gio::Cancellable>,
         |result| {
             if let Err(e) = result {
                 eprintln!("Failed to spawn CLI session: {}", e);
@@ -85,19 +83,6 @@ pub fn build_dev_window(
             terminal_clone.feed(format!("\n{}", text).as_bytes());
         }
         glib::ControlFlow::Continue
-    });
-
-    // Forward commands to simulation runner (optional)
-    let command_sender_clone = command_sender.clone();
-    terminal.connect_commit(move |_terminal, text, _| {
-        let command = text.trim().to_lowercase();
-        match command.as_str() {
-            "start" => { let _ = command_sender_clone.send(ControlCommand::Start); }
-            "stop" => { let _ = command_sender_clone.send(ControlCommand::Stop); }
-            "status" => { let _ = command_sender_clone.send(ControlCommand::Status); }
-            "reset" => { let _ = command_sender_clone.send(ControlCommand::Reset); }
-            _ => {}
-        }
     });
 
     window.set_child(Some(&container));

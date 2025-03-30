@@ -68,8 +68,7 @@ pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: 
             let dev_win = dev_window::build_dev_window(
                 app_clone_dev.clone(),
                 control_dev.logs(),
-                log_receiver_dev.clone(), // Pass the Arc<Mutex<Receiver>>
-                command_sender_dev.clone(),
+                log_receiver_dev.clone(), // Pass only log_receiver
             );
             dev_win.present();
         });
