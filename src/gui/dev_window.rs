@@ -10,7 +10,7 @@ use crate::simulation::simulation_runner::ControlCommand;
 pub fn build_dev_window(
     app: gtk4::Application,
     logs: Arc<Mutex<Vec<String>>>,
-    log_receiver: Receiver<Vec<Vec<TropismResult>>>,
+    log_receiver: Arc<Mutex<Receiver<Vec<Vec<TropismResult>>>>>,
     command_sender: Sender<ControlCommand>,
 ) -> ApplicationWindow {
     let window = ApplicationWindow::new(&app);
@@ -38,11 +38,13 @@ pub fn build_dev_window(
     let log_buffer: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     const MAX_LINES: usize = 100;
 
-    // Handle logs in a separate thread to avoid GTK main thread dependency
+    // Handle logs in the GTK main thread
     let terminal_clone = terminal.clone();
     let log_buffer_clone = log_buffer.clone();
-    std::thread::spawn(move || {
-        while let Ok(results_vec) = log_receiver.recv() {
+    let log_receiver_clone = log_receiver.clone();
+    glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+        let receiver = log_receiver_clone.lock().unwrap();
+        if let Ok(results_vec) = receiver.try_recv() {
             let mut buffer = log_buffer_clone.lock().unwrap();
             for plant_results in &results_vec {
                 for result in plant_results {
@@ -53,54 +55,47 @@ pub fn build_dev_window(
                 }
             }
             let text = buffer.join("\n");
-            glib::idle_add_once(move || {
-                terminal_clone.reset(true, false);
-                terminal_clone.feed(format!("{}\n> ", text).as_bytes());
-            });
+            terminal_clone.reset(true, false);
+            terminal_clone.feed(format!("{}\n> ", text).as_bytes());
         }
+        glib::ControlFlow::Continue
     });
 
     // Handle user input
     let command_sender_clone = command_sender.clone();
-    terminal.connect_char_event(move |terminal, char| {
-        if char == '\r' { // Enter key
-            let contents = terminal.get_text(None, None, |_| true).unwrap_or_default().to_string();
-            let command = contents
-                .lines()
-                .last()
-                .unwrap_or("")
-                .trim_start_matches('>')
-                .trim();
-            match command {
-                "start" => {
-                    if command_sender_clone.send(ControlCommand::Start).is_ok() {
-                        terminal.feed(b"\nSimulation starting...\n> ");
-                    }
+    terminal.connect_commit(move |terminal, text, _| {
+        let command = text
+            .trim()
+            .trim_start_matches('>')
+            .trim();
+        match command {
+            "start" => {
+                if command_sender_clone.send(ControlCommand::Start).is_ok() {
+                    terminal.feed(b"\nSimulation starting...\n> ");
                 }
-                "stop" => {
-                    if command_sender_clone.send(ControlCommand::Stop).is_ok() {
-                        terminal.feed(b"\nSimulation stopping...\n> ");
-                    }
+            }
+            "stop" => {
+                if command_sender_clone.send(ControlCommand::Stop).is_ok() {
+                    terminal.feed(b"\nSimulation stopping...\n> ");
                 }
-                "status" => {
-                    if command_sender_clone.send(ControlCommand::Status).is_ok() {
-                        terminal.feed(b"\nChecking status...\n> ");
-                    }
+            }
+            "status" => {
+                if command_sender_clone.send(ControlCommand::Status).is_ok() {
+                    terminal.feed(b"\nChecking status...\n> ");
                 }
-                "reset" => {
-                    if command_sender_clone.send(ControlCommand::Reset).is_ok() {
-                        terminal.feed(b"\nSimulation resetting...\n> ");
-                        terminal.reset(true, true);
-                    }
+            }
+            "reset" => {
+                if command_sender_clone.send(ControlCommand::Reset).is_ok() {
+                    terminal.feed(b"\nSimulation resetting...\n> ");
+                    terminal.reset(true, true);
                 }
-                cmd => {
-                    if !cmd.is_empty() {
-                        terminal.feed(format!("\nUnknown command: {}\n> ", cmd).as_bytes());
-                    }
+            }
+            cmd => {
+                if !cmd.is_empty() {
+                    terminal.feed(format!("\nUnknown command: {}\n> ", cmd).as_bytes());
                 }
             }
         }
-        glib::Propagation::Proceed
     });
 
     window.set_child(Some(&container));

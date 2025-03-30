@@ -17,7 +17,7 @@ pub struct SimulationRunner {
     control: Arc<SimulationControl>,
     command_receiver: Receiver<ControlCommand>,
     command_sender: Sender<ControlCommand>,
-    log_sender: Sender<Vec<Vec<TropismResult>>>, // Adjusted to match PlantEngine output
+    log_sender: Sender<Vec<Vec<TropismResult>>>,
     running: Arc<Mutex<bool>>,
     plant_engine: Arc<Mutex<PlantEngine>>,
     cspace_engine: Arc<Mutex<CSpaceEngine>>,
@@ -54,7 +54,7 @@ impl SimulationRunner {
 
         loop {
             let now = Instant::now();
-            let elapsed = now.duration_since(last_update);
+            let _elapsed = now.duration_since(last_update); // Unused for now
 
             // Process commands
             while let Ok(command) = self.command_receiver.try_recv() {
@@ -118,11 +118,13 @@ impl SimulationRunner {
 
                 // Update shared state in SimulationControl
                 {
-                    let mut plants = self.control.plants().lock().unwrap();
+                    let plants_guard = self.control.plants();
+                    let mut plants = plants_guard.lock().unwrap();
                     *plants = plant_engine.env.plants.clone();
                 }
                 {
-                    let mut env = self.control.environment().lock().unwrap();
+                    let env_guard = self.control.environment();
+                    let mut env = env_guard.lock().unwrap();
                     *env = plant_engine.env.environment.clone();
                 }
             }

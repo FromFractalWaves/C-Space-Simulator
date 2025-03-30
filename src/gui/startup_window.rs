@@ -5,13 +5,14 @@ use crate::control::SimulationControl;
 use crate::gui::{
     control_window, dev_window, environment_window, plant_diagnostics_window, simulation_window,
 };
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Sender, Receiver};
 use crate::plants::tropisms::TropismResult;
 use crate::simulation::simulation_runner::ControlCommand;
 
 pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: Receiver<Vec<Vec<TropismResult>>>) {
     let app = Application::new(Some("com.example.simulator"), Default::default());
+    let log_receiver = Arc::new(Mutex::new(log_receiver)); // Wrap in Arc<Mutex>
 
     app.connect_activate(move |app| {
         let control = Arc::new(SimulationControl::new(crate::simulation::simulation_env::SimulationEnv::new()));
@@ -51,6 +52,7 @@ pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: 
         let app_clone_sim = app_clone.clone();
         let command_sender_control = command_sender.clone();
         let command_sender_dev = command_sender.clone();
+        let log_receiver_dev = log_receiver.clone(); // Clone the Arc
 
         control_btn.connect_clicked(move |_| {
             let control_win = control_window::build_control_window(
@@ -66,7 +68,7 @@ pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: 
             let dev_win = dev_window::build_dev_window(
                 app_clone_dev.clone(),
                 control_dev.logs(),
-                log_receiver, // Move log_receiver here
+                log_receiver_dev.clone(), // Pass the Arc<Mutex<Receiver>>
                 command_sender_dev.clone(),
             );
             dev_win.present();
