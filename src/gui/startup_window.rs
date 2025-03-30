@@ -1,4 +1,3 @@
-// src/gui/startup_window.rs
 use gtk4::prelude::*;
 use gtk4::Application;
 use gtk4::{ApplicationWindow, Button, Box as GtkBox, Orientation};
@@ -11,7 +10,7 @@ use std::sync::mpsc::{Sender, Receiver};
 use crate::plants::tropisms::TropismResult;
 use crate::simulation::simulation_runner::ControlCommand;
 
-pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: Receiver<Vec<TropismResult>>) {
+pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: Receiver<Vec<Vec<TropismResult>>>) {
     let app = Application::new(Some("com.example.simulator"), Default::default());
 
     app.connect_activate(move |app| {
@@ -60,15 +59,15 @@ pub fn launch_with_runner(command_sender: Sender<ControlCommand>, log_receiver: 
                 control_control.clone(),
             );
             control_win.present();
-            command_sender_control.send(ControlCommand::Start).unwrap(); // Start on control window open
+            command_sender_control.send(ControlCommand::Start).unwrap();
         });
 
         dev_btn.connect_clicked(move |_| {
             let dev_win = dev_window::build_dev_window(
                 app_clone_dev.clone(),
                 control_dev.logs(),
-                log_receiver.clone(), // Pass the log receiver
-                command_sender_dev.clone(), // Pass the command sender
+                log_receiver, // Move log_receiver here
+                command_sender_dev.clone(),
             );
             dev_win.present();
         });

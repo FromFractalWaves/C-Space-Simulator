@@ -30,7 +30,7 @@ pub struct Environment {
 }
 
 /// Tropism result for logging and rendering
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TropismResult {
     pub growth_delta: Vector3<f32>, // Change in position or direction
     pub rho_c: f32,                 // Complex density after tropism

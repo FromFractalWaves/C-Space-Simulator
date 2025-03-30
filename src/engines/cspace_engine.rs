@@ -3,8 +3,8 @@ use nalgebra::Matrix3;
 use crate::plants::tropisms::{Plant, Environment};
 
 pub struct CSpaceEngine {
-    plants: Vec<Plant>,
-    environment: Environment,
+    pub plants: Vec<Plant>,
+    pub environment: Environment,
 }
 
 impl CSpaceEngine {
